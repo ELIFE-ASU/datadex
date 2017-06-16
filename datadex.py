@@ -30,14 +30,17 @@ def parse(value):
             break
     return value
 
-def hash_directory(root_dir, hasher=hashlib.sha256(), top_level=True):
+def hash_directory(root_dir, hasher=None):
     """
     Hash a directory structure.
     """
-    if top_level:
+    top_level = False
+    if hasher is None:
+        hasher = hashlib.sha256()
         cwd = os.getcwd()
         os.chdir(root_dir)
         root_dir = "."
+        top_level = True
     for root, directories, filenames in os.walk(root_dir):
         for filename in filenames:
             filepath = path.normpath(path.join(root, filename))
@@ -45,7 +48,7 @@ def hash_directory(root_dir, hasher=hashlib.sha256(), top_level=True):
             with open(filepath, 'rb') as handle:
                 hasher.update(handle.read())
         for directory in directories:
-            hash_directory(path.join(root, directory), hasher=hasher, top_level=False)
+            hash_directory(path.join(root, directory), hasher=hasher)
     if top_level:
         os.chdir(cwd)
     return hasher
@@ -81,14 +84,6 @@ class DataDex(object):
             raise RuntimeError("filename column is missing from library")
 
         self.params_filenames = ["params.dex", "params.txt", "params.dat"]
-
-    def __dealloc__(self):
-        """
-        Deallocate the DataDex.
-        """
-        if self.is_connected():
-            self.commit()
-            self.disconnect()
 
     def connect(self):
         """
@@ -260,7 +255,7 @@ class DataDex(object):
 
         if self.hash_dir:
             name = hash_directory(dirname).hexdigest()
-            name = path.join(path.dirname(dirname), name)
+            name = path.normpath(path.join(path.dirname(dirname), name))
             if path.exists(name) and len(self.lookup({"filename": name}, False, False)) != 0:
                 return True, False
         else:
@@ -300,6 +295,8 @@ class DataDex(object):
                         status = "skipped (no params file)"
                     print("* Directory {} {}".format(dirname, status))
                 something_was_indexed = something_was_indexed or added
+        if something_was_indexed:
+            self.commit()
         return something_was_indexed
 
     def reindex(self, root_dir=".", ignore_filename=True, enforce_null=True):
@@ -307,16 +304,21 @@ class DataDex(object):
         Reset the library and index a directory
         """
         self.reset_library()
-        self.index(root_dir, ignore_filename, enforce_null)
+        return self.index(root_dir, ignore_filename, enforce_null)
 
     def prune(self):
         """
         Remove nonexistent datasets from the library.
         """
+        something_was_pruned = False
         for dataset in self.search():
             if not path.exists(dataset):
                 query = 'DELETE FROM LIBRARY WHERE FILENAME = {}'
                 self.query(query.format(repr(dataset)))
+                something_was_pruned = True
+        if something_was_pruned:
+            self.commit()
+        return something_was_pruned
 
     def __parse_headers(self):
         """
