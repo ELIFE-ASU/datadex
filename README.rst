@@ -20,6 +20,7 @@ each of which contains a ``params.txt`` file. Within that file is a line-by-line
 listing of the parameters associated with that dataset. For example:
 
 ::
+
     example/dataset1/params.txt:
         theta: 5
         phi: 1.3
