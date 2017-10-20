@@ -352,7 +352,7 @@ class DataDex(object):
         """
         params = dict()
         comment_regex = re.compile("^\\s*#.*$")
-        entry_regex = re.compile("^\\s*(\\S+)\\s*[:=]\\s*(\\S+)$")
+        entry_regex = re.compile("^\\s*(\\S+)\\s*[:=]\\s*(\\S.*)\\s*$")
         with open(filename, 'r') as handle:
             for (line_number, line) in enumerate(handle):
                 if not comment_regex.match(line):
