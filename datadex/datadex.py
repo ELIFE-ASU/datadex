@@ -149,11 +149,11 @@ class DataDex(object):
 
         return column_names
 
-    def create_library(self, headers=HEADERS_FILENAME):
+    def create_library(self, headers_filename=HEADERS_FILENAME):
         """
         Create a library with the provided parameter names
         """
-        headers = DataDex.parse(headers)
+        headers = DataDex.parse(headers_filename)
 
         if len(headers) == 0:
             raise ValueError("no column headers provided")
