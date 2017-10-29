@@ -323,6 +323,12 @@ class DataDex(object):
             else:
                 return list(map(lambda d: d[0], description))
 
+    def has_header(self, header):
+        """
+        Does the index have a given header?
+        """
+        return header in self.headers
+
     @staticmethod
     def parse(filename):
         try:
