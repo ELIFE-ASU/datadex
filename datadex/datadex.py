@@ -88,18 +88,27 @@ class DataDex(object):
         """
         Create a library with the provided parameter names
         """
-        column_names = DataDex.parse_headers(headers)
-        if len(column_names) == 0:
-            raise RuntimeError("no column headers provided")
+        headers = DataDex.parse_headers(headers)
 
-        if "filename" not in column_names:
-            column_names.append("filename")
+        if len(headers) == 0:
+            raise ValueError("no column headers provided")
+        elif not isinstance(headers, dict):
+            raise ValueError("headers.json must be a dict")
+
+        if 'filename' not in headers:
+            headers['filename'] = 'The data directory'
+
+        column_names = list(headers.keys())
 
         if self.headers is None:
-            cursor, _ = self.get_cursor()
             column_headers = '({})'.format(','.join(column_names))
-            query = "CREATE TABLE IF NOT EXISTS LIBRARY" + column_headers
-            cursor.execute(query)
+            self.query('CREATE TABLE IF NOT EXISTS LIBRARY ' + column_headers)
+
+            self.query('CREATE TABLE IF NOT EXISTS HEADERS (HEADER, DESCRIPTION)')
+            for header in headers:
+                values = '({},{})'.format(repr(str(header)), repr(str(headers[header])))
+                self.query('INSERT INTO HEADERS (HEADER, DESCRIPTION) VALUES {}'.format(values))
+
             self.commit()
             self.__headers = column_names
         elif self.headers != column_names:
@@ -214,7 +223,7 @@ class DataDex(object):
             values = entry.values()
             fields = "({})".format(", ".join(map(lambda x: x.upper(), entry.keys())))
             values = "({})".format(", ".join(map(repr, entry.values())))
-            self.query("INSERT INTO LIBRARY {} values {}".format(fields, values))
+            self.query("INSERT INTO LIBRARY {} VALUES {}".format(fields, values))
             return True
         return False
 
@@ -301,7 +310,6 @@ class DataDex(object):
         """
         Parse a header file
         """
-        print(filename)
         with open(filename, 'r') as header_file:
             return json.load(header_file)
 
