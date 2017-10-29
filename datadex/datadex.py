@@ -123,6 +123,32 @@ class DataDex(object):
             pass
         return headers
 
+    def __drop_tables(self):
+        """
+        Drop the library and header descriptions tables
+        """
+        self.query('DROP TABLE IF EXISTS LIBRARY')
+        self.query('DROP TABLE IF EXISTS HEADERS')
+        self.commit()
+
+    def __create_tables(self, headers):
+        """
+        Create the library and header descriptions tables
+        """
+        column_names = list(headers.keys())
+
+        column_headers = '({})'.format(','.join(column_names))
+        self.query('CREATE TABLE IF NOT EXISTS LIBRARY ' + column_headers)
+
+        self.query('CREATE TABLE IF NOT EXISTS HEADERS (HEADER, DESCRIPTION)')
+        for header in headers:
+            values = u'("{}","{}")'.format(header, headers[header])
+            self.query(u'INSERT INTO HEADERS (HEADER, DESCRIPTION) VALUES {}'.format(values))
+
+        self.commit()
+
+        return column_names
+
     def create_library(self, headers=HEADERS_FILENAME):
         """
         Create a library with the provided parameter names
@@ -137,22 +163,11 @@ class DataDex(object):
         if 'filename' not in headers:
             headers['filename'] = 'The data directory'
 
-        column_names = list(headers.keys())
-
         if self.headers is None:
-            column_headers = '({})'.format(','.join(column_names))
-            self.query('CREATE TABLE IF NOT EXISTS LIBRARY ' + column_headers)
-
-            self.query('CREATE TABLE IF NOT EXISTS HEADERS (HEADER, DESCRIPTION)')
-            for header in headers:
-                values = u'("{}","{}")'.format(header, headers[header])
-                self.query(u'INSERT INTO HEADERS (HEADER, DESCRIPTION) VALUES {}'.format(values))
-
-            self.commit()
-            self.__headers = column_names
-        elif self.headers != column_names:
-            msg = 'library already exists with column names {}'
-            raise RuntimeError(msg.format(column_headers[:-1]))
+            self.__headers = self.__create_tables(headers)
+        elif self.headers != list(headers.keys()):
+            self.__drop_tables()
+            self.__headers = self.__create_tables(headers)
 
     def query(self, query):
         """
