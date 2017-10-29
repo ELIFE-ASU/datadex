@@ -250,7 +250,7 @@ class DataDex(object):
 
         return file_found, file_added
 
-    def index(self, root_dir, ignore_filename=True, enforce_null=True):
+    def index(self, root_dir='.', ignore_filename=True, enforce_null=True):
         """
         Index a directory
         """
