@@ -162,23 +162,43 @@ class DataDex(object):
         cursor.execute(query)
         return cursor.fetchall()
 
+    def select(self, fields=None, conditions=None):
+        """
+        Query the data, returning tuples of matched entries
+        """
+        if fields is None or fields == [] or fields == '':
+            field_query = '*'
+        elif isinstance(fields, str):
+            field_query = fields.upper()
+        else:
+            field_query = ','.join(fields).upper()
+
+        if conditions is None or conditions == [] or conditions == '':
+            condition_query = ''
+        elif isinstance(conditions, str):
+            condition_query = 'WHERE ' + conditions.upper()
+        else:
+            condition_query = 'WHERE ' + ' AND '.join(conditions)
+
+        query = 'SELECT {} FROM LIBRARY {}'.format(field_query, condition_query)
+        return self.query(query)
+
     def search(self, *conditions):
         """
         Query the database, returning any files that match
         """
-        query = "SELECT FILENAME FROM LIBRARY"
         if len(conditions) != 0:
-            query += " WHERE " + " AND ".join(conditions)
-        raw_response = self.query(query)
+            raw_response = self.select(fields="FILENAME", conditions=conditions)
+        else:
+            raw_response = self.select(fields="FILENAME")
         return list(map(lambda x: path.normpath(x[0]), raw_response))
 
     def lookup(self, entry=None, ignore_filename=True, enforce_null=True):
         """
         Look for an exact entry in the database
         """
-        query = "SELECT * FROM LIBRARY"
-        if entry is not None and len(query) != 0:
-            conditions = []
+        conditions = []
+        if entry is not None:
             for field in entry:
                 if ignore_filename and field.lower() == "filename":
                     continue
@@ -190,8 +210,7 @@ class DataDex(object):
                         continue
                     elif field not in entry:
                         conditions.append("{} IS NULL".format(field.upper()))
-            query += " WHERE " + " AND ".join(conditions)
-        return self.query(query)
+        return self.select(conditions=conditions)
 
     def add(self, entry, ignore_filename=True, enforce_null=True):
         """
