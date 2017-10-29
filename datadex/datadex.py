@@ -106,8 +106,10 @@ class DataDex(object):
 
             self.query('CREATE TABLE IF NOT EXISTS HEADERS (HEADER, DESCRIPTION)')
             for header in headers:
-                values = '({},{})'.format(repr(str(header)), repr(str(headers[header])))
-                self.query('INSERT INTO HEADERS (HEADER, DESCRIPTION) VALUES {}'.format(values))
+                values = u'("{}","{}")'.format(header, headers[header])
+                query = u'INSERT INTO HEADERS (HEADER, DESCRIPTION) VALUES {}'.format(values)
+                print(query)
+                self.query(query)
 
             self.commit()
             self.__headers = column_names
@@ -304,6 +306,22 @@ class DataDex(object):
         if something_was_pruned:
             self.commit()
         return something_was_pruned
+
+    def describe(self, header=None):
+        """
+        Return a description of a header
+        """
+        if header is None:
+            return dict(self.query('SELECT * FROM HEADERS'))
+        else:
+            query ='SELECT DESCRIPTION FROM HEADERS WHERE HEADER="{}"'.format(header)
+            description = self.query(query)
+            if len(description) == 0:
+                return None
+            elif len(description) == 1:
+                return description[0][0]
+            else:
+                return list(map(lambda d: d[0], description))
 
     @staticmethod
     def parse_headers(filename=HEADERS_FILENAME):
