@@ -32,7 +32,7 @@ def hash_directory(root_dir, hasher=None):
     return hasher
 
 PARAMS_FILENAME = 'params.json'
-HEADER_FILENAME = 'headers.json'
+HEADERS_FILENAME = 'headers.json'
 
 class DataDex(object):
     """
@@ -84,14 +84,13 @@ class DataDex(object):
             self.__conn.close()
             self.__conn = None
 
-    def create_library(self, *column_names):
+    def create_library(self, headers=HEADERS_FILENAME):
         """
         Create a library with the provided parameter names
         """
+        column_names = DataDex.parse_headers(headers)
         if len(column_names) == 0:
-            column_names = self.__parse_headers()
-        else:
-            column_names = list(map(lambda x: x.lower(), column_names))
+            raise RuntimeError("no column headers provided")
 
         if "filename" not in column_names:
             column_names.append("filename")
@@ -297,20 +296,14 @@ class DataDex(object):
             self.commit()
         return something_was_pruned
 
-    def __parse_headers(self):
+    @staticmethod
+    def parse_headers(filename=HEADERS_FILENAME):
         """
         Parse a header file
         """
-        try:
-            with open(HEADER_FILENAME, 'r') as header_file:
-                column_names = json.load(header_file)
-        except:
-            column_names = []
-
-        if len(column_names) == 0:
-            raise RuntimeError("cannot create library; no headings provided")
-
-        return column_names
+        print(filename)
+        with open(filename, 'r') as header_file:
+            return json.load(header_file)
 
     @staticmethod
     def __parse_params(filename):
