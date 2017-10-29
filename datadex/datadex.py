@@ -248,10 +248,13 @@ class DataDex(object):
 
         return file_found, file_added
 
-    def index(self, root_dir='.', ignore_filename=True, enforce_null=True):
+    def index(self, root_dir='.', ignore_filename=True, enforce_null=True, truncate=False):
         """
         Index a directory
         """
+        if truncate:
+            self.query('DELETE FROM LIBRARY')
+            self.commit()
         something_was_indexed = False
         for root, dirs, _ in os.walk(root_dir):
             for directory in dirs:
