@@ -227,11 +227,11 @@ class DataDex(object):
                         conditions.append("{} IS NULL".format(field.upper()))
         return self.select(conditions=conditions)
 
-    def add(self, entry, ignore_filename=True, enforce_null=True):
+    def add(self, entry):
         """
         Add a row to the database
         """
-        if len(self.lookup(entry, ignore_filename, enforce_null)) == 0:
+        if len(self.lookup(entry, ignore_filename=True, enforce_null=True)) == 0:
             values = entry.values()
             fields = "({})".format(", ".join(map(lambda x: x.upper(), entry.keys())))
             values = "({})".format(", ".join(map(repr, entry.values())))
@@ -239,7 +239,7 @@ class DataDex(object):
             return True
         return False
 
-    def add_dir(self, dirname, ignore_filename=True, enforce_null=True):
+    def add_dir(self, dirname):
         """
         Add a directory to the index.
         """
@@ -264,7 +264,7 @@ class DataDex(object):
         params = DataDex.parse(param_file)
         if len(params) != 0:
             params["filename"] = name
-            file_added = self.add(params, ignore_filename, enforce_null)
+            file_added = self.add(params)
         else:
             msg = 'empty params file found {}'
             raise RuntimeError(msg.format(param_filepath))
@@ -274,7 +274,7 @@ class DataDex(object):
 
         return file_found, file_added
 
-    def index(self, root_dir='.', ignore_filename=True, enforce_null=True, truncate=False):
+    def index(self, root_dir='.', truncate=False):
         """
         Index a directory
         """
@@ -285,7 +285,7 @@ class DataDex(object):
         for root, dirs, _ in os.walk(root_dir):
             for directory in dirs:
                 dirname = os.path.join(root, directory)
-                found, added = self.add_dir(dirname, ignore_filename, enforce_null)
+                found, added = self.add_dir(dirname)
                 if self.verbose:
                     if found and added:
                         status = "indexed"
