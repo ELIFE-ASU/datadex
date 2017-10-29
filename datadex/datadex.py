@@ -146,9 +146,7 @@ class DataDex(object):
             self.query('CREATE TABLE IF NOT EXISTS HEADERS (HEADER, DESCRIPTION)')
             for header in headers:
                 values = u'("{}","{}")'.format(header, headers[header])
-                query = u'INSERT INTO HEADERS (HEADER, DESCRIPTION) VALUES {}'.format(values)
-                print(query)
-                self.query(query)
+                self.query(u'INSERT INTO HEADERS (HEADER, DESCRIPTION) VALUES {}'.format(values))
 
             self.commit()
             self.__headers = column_names
