@@ -32,6 +32,7 @@ def hash_directory(root_dir, hasher=None):
     return hasher
 
 PARAMS_FILENAME = 'params.json'
+HEADER_FILENAME = 'headers.json'
 
 class DataDex(object):
     """
@@ -301,8 +302,8 @@ class DataDex(object):
         Parse a header file
         """
         try:
-            with open(PARAMS_FILENAME, 'r') as params_file:
-                column_names = json.load(params_file)
+            with open(HEADER_FILENAME, 'r') as header_file:
+                column_names = json.load(header_file)
         except:
             column_names = []
 
@@ -323,3 +324,4 @@ class DataDex(object):
             return params
         except ValueError:
             raise ValueError('invalid JSON in "{}"'.format(filename))
+
