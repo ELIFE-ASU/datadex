@@ -6,29 +6,7 @@ import os.path as path
 import re
 import sqlite3
 import hashlib
-
-def parse_to(value, cls):
-    """
-    Parse a value to a new class.
-    """
-    parsed = False
-    try:
-        value = cls(value)
-        parsed = True
-    except ValueError:
-        pass
-    return value, parsed
-
-def parse(value):
-    """
-    Parse a value into one of the sqlite type.
-    """
-    types = [int, float]
-    for new_type in types:
-        value, parsed = parse_to(value, new_type)
-        if parsed:
-            break
-    return value
+import json
 
 def hash_directory(root_dir, hasher=None):
     """
@@ -52,6 +30,8 @@ def hash_directory(root_dir, hasher=None):
     if top_level:
         os.chdir(cwd)
     return hasher
+
+PARAMS_FILENAME = 'params.json'
 
 class DataDex(object):
     """
@@ -82,8 +62,6 @@ class DataDex(object):
         self.__headers = self.get_headers()
         if self.headers is not None and self.headers[-1].lower() != 'filename':
             raise RuntimeError("filename column is missing from library")
-
-        self.params_filenames = ["params.dex", "params.txt", "params.dat"]
 
     def connect(self):
         """
@@ -324,22 +302,12 @@ class DataDex(object):
         """
         Parse a header file
         """
-        column_names = []
-        for params_filename in self.params_filenames:
-            if path.exists(params_filename) and path.isfile(params_filename):
-                comment_regex = re.compile("^\\s*#.*$")
-                header_regex = re.compile("^\\s*(\\S+)\\s*$")
-                with open(params_filename, 'r') as handle:
-                    for (line_number, line) in enumerate(handle):
-                        if not comment_regex.match(line):
-                            match = header_regex.match(line)
-                            if match:
-                                header = match.group(1)
-                                if header not in column_names:
-                                    column_names.append(header)
-                            else:
-                                msg = "invalid header entry, line {}"
-                                raise RuntimeError(msg.format(line_number))
+        try:
+            with open(PARAMS_FILENAME, 'r') as params_file:
+                column_names = json.load(params_file)
+        except:
+            column_names = []
+
         if len(column_names) == 0:
             raise RuntimeError("cannot create library; no headings provided")
 
@@ -351,28 +319,19 @@ class DataDex(object):
         Parse a parameters file.
         """
         params = dict()
-        comment_regex = re.compile("^\\s*#.*$")
-        entry_regex = re.compile("^\\s*(\\S+)\\s*[:=]\\s*(\\S.*)\\s*$")
-        with open(filename, 'r') as handle:
-            for (line_number, line) in enumerate(handle):
-                if not comment_regex.match(line):
-                    match = entry_regex.match(line)
-                    if match:
-                        field = match.group(1)
-                        value = parse(match.group(2))
-                        params[field] = value
-                    else:
-                        msg = "invalid parameter entry, line {}"
-                        raise RuntimeError(msg.format(line_number))
-        return params
+        try:
+            with open(filename, 'r') as params_file:
+                params = json.load(params_file)
+            return params
+        except ValueError:
+            raise ValueError('invalid JSON in "{}"'.format(filename))
 
     def __get_param_files(self, dirname):
         """
         Find all parameter files in a directory
         """
         files = []
-        for filename in self.params_filenames:
-            filepath = path.normpath(path.join(dirname, filename))
-            if path.exists(filepath) and path.isfile(filepath):
-                files.append(filepath)
+        filepath = path.normpath(path.join(dirname, PARAMS_FILENAME))
+        if path.exists(filepath) and path.isfile(filepath):
+            files.append(filepath)
         return files
