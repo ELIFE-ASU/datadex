@@ -163,11 +163,22 @@ class DataDex(object):
         if 'filename' not in headers:
             headers['filename'] = 'The data directory'
 
+        invalid_dirs = None
         if self.headers is None:
             self.__headers = self.__create_tables(headers)
         elif self.headers != list(headers.keys()):
+            entry_dirs = set(self.search())
             self.__drop_tables()
             self.__headers = self.__create_tables(headers)
+            for dir in entry_dirs:
+                try:
+                    self.add_dir(dir)
+                except sqlite3.OperationalError as e:
+                    print('unexpected parameters in directory "{}" ({})'.format(dir,e))
+                    if invalid_dirs is None:
+                        invalid_dirs = []
+                    invalid_dirs.append(dir)
+        return invalid_dirs
 
     def query(self, query):
         """
@@ -231,7 +242,7 @@ class DataDex(object):
         """
         Add a row to the database
         """
-        if len(self.lookup(entry, ignore_filename=True, enforce_null=True)) == 0:
+        if len(self.lookup(entry, True, True)) == 0:
             values = entry.values()
             fields = "({})".format(", ".join(map(lambda x: x.upper(), entry.keys())))
             values = "({})".format(", ".join(map(repr, entry.values())))
