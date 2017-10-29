@@ -88,7 +88,7 @@ class DataDex(object):
         """
         Create a library with the provided parameter names
         """
-        headers = DataDex.parse_headers(headers)
+        headers = DataDex.parse(headers)
 
         if len(headers) == 0:
             raise ValueError("no column headers provided")
@@ -251,7 +251,7 @@ class DataDex(object):
             name = path.normpath(dirname)
 
         file_found, file_added = True, False
-        params = DataDex.__parse_params(param_file)
+        params = DataDex.parse(param_file)
         if len(params) != 0:
             params["filename"] = name
             file_added = self.add(params, ignore_filename, enforce_null)
@@ -324,23 +324,9 @@ class DataDex(object):
                 return list(map(lambda d: d[0], description))
 
     @staticmethod
-    def parse_headers(filename=HEADERS_FILENAME):
-        """
-        Parse a header file
-        """
-        with open(filename, 'r') as header_file:
-            return json.load(header_file)
-
-    @staticmethod
-    def __parse_params(filename):
-        """
-        Parse a parameters file.
-        """
-        params = dict()
+    def parse(filename):
         try:
-            with open(filename, 'r') as params_file:
-                params = json.load(params_file)
-            return params
+            with open(filename, 'r') as file:
+                return json.load(file)
         except ValueError:
             raise ValueError('invalid JSON in "{}"'.format(filename))
-
