@@ -227,8 +227,8 @@ class DataDex(object):
         elif not path.isdir(dirname):
             raise RuntimeError('"{}" is not a directory'.format(dirname))
 
-        param_files = self.__get_param_files(dirname)
-        if len(param_files) == 0:
+        param_file = path.join(dirname, PARAMS_FILENAME)
+        if not path.exists(param_file) or not path.isfile(param_file):
             return False, False
 
         if self.hash_dir:
@@ -240,15 +240,13 @@ class DataDex(object):
             name = path.normpath(dirname)
 
         file_found, file_added = True, False
-        for param_filepath in param_files:
-            params = DataDex.__parse_params(param_filepath)
-            if len(params) != 0:
-                params["filename"] = name
-                added = self.add(params, ignore_filename, enforce_null)
-                file_added = file_added or added
-            else:
-                msg = 'empty params file found {}'
-                raise RuntimeError(msg.format(param_filepath))
+        params = DataDex.__parse_params(param_file)
+        if len(params) != 0:
+            params["filename"] = name
+            file_added = self.add(params, ignore_filename, enforce_null)
+        else:
+            msg = 'empty params file found {}'
+            raise RuntimeError(msg.format(param_filepath))
 
         if (file_added or (file_found and not path.exists(name))) and self.hash_dir:
             os.rename(dirname, name)
@@ -325,13 +323,3 @@ class DataDex(object):
             return params
         except ValueError:
             raise ValueError('invalid JSON in "{}"'.format(filename))
-
-    def __get_param_files(self, dirname):
-        """
-        Find all parameter files in a directory
-        """
-        files = []
-        filepath = path.normpath(path.join(dirname, PARAMS_FILENAME))
-        if path.exists(filepath) and path.isfile(filepath):
-            files.append(filepath)
-        return files
