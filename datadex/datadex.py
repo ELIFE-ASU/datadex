@@ -84,6 +84,45 @@ class DataDex(object):
             self.__conn.close()
             self.__conn = None
 
+    def get_cursor(self):
+        """
+        Get a cursor into the library.
+        """
+        established_connection = False
+        if not self.is_connected():
+            self.connect()
+            established_connection = True
+        return self.__conn.cursor(), established_connection
+
+    def commit(self):
+        """
+        Save any changes made to the library.
+        """
+        if self.is_connected():
+            self.__conn.commit()
+
+    @property
+    def headers(self):
+        """
+        Cache the headers from the library and return them.
+        """
+        if self.__headers is None:
+            self.__headers = self.get_headers()
+        return self.__headers
+
+    def get_headers(self):
+        """
+        Get the headers from the library.
+        """
+        headers = None
+        cursor, _ = self.get_cursor()
+        try:
+            cursor.execute("SELECT * FROM LIBRARY")
+            headers = list(map(lambda x: x[0], cursor.description))
+        except sqlite3.OperationalError:
+            pass
+        return headers
+
     def create_library(self, headers=HEADERS_FILENAME):
         """
         Create a library with the provided parameter names
@@ -124,59 +163,6 @@ class DataDex(object):
         cursor, _ = self.get_cursor()
         cursor.execute("DROP TABLE IF EXISTS LIBRARY")
         self.commit()
-
-    def reset_library(self):
-        """
-        Reset the library to the empty state.
-        """
-        try:
-            self.drop_library()
-        except sqlite3.OperationalError:
-            pass
-        cursor, _ = self.get_cursor()
-        column_headers = '({})'.format(','.join(self.headers))
-        query = "CREATE TABLE IF NOT EXISTS LIBRARY" + column_headers
-        cursor.execute(query)
-        self.commit()
-
-    @property
-    def headers(self):
-        """
-        Cache the headers from the library and return them.
-        """
-        if self.__headers is None:
-            self.__headers = self.get_headers()
-        return self.__headers
-
-    def get_headers(self):
-        """
-        Get the headers from the library.
-        """
-        headers = None
-        cursor, _ = self.get_cursor()
-        try:
-            cursor.execute("SELECT * FROM LIBRARY")
-            headers = list(map(lambda x: x[0], cursor.description))
-        except sqlite3.OperationalError:
-            pass
-        return headers
-
-    def get_cursor(self):
-        """
-        Get a cursor into the library.
-        """
-        established_connection = False
-        if not self.is_connected():
-            self.connect()
-            established_connection = True
-        return self.__conn.cursor(), established_connection
-
-    def commit(self):
-        """
-        Save any changes made to the library.
-        """
-        if self.is_connected():
-            self.__conn.commit()
 
     def query(self, query):
         """
@@ -285,13 +271,6 @@ class DataDex(object):
         if something_was_indexed:
             self.commit()
         return something_was_indexed
-
-    def reindex(self, root_dir, ignore_filename=True, enforce_null=True):
-        """
-        Reset the library and index a directory
-        """
-        self.reset_library()
-        return self.index(root_dir, ignore_filename, enforce_null)
 
     def prune(self):
         """
