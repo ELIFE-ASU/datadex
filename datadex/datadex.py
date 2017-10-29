@@ -154,14 +154,6 @@ class DataDex(object):
             msg = 'library already exists with column names {}'
             raise RuntimeError(msg.format(column_headers[:-1]))
 
-    def drop_library(self):
-        """
-        Drop the library from the database.
-        """
-        cursor, _ = self.get_cursor()
-        cursor.execute("DROP TABLE IF EXISTS LIBRARY")
-        self.commit()
-
     def query(self, query):
         """
         Run an arbitrary SQLite query.
