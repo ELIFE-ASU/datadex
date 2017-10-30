@@ -31,6 +31,13 @@ def hash_directory(root_dir, hasher=None):
         os.chdir(cwd)
     return hasher
 
+def sql_escape(old):
+    """
+    Escape quotations in a string in an SQLite3 compatible way.
+    """
+    return old.replace('"','""')
+
+
 PARAMS_FILENAME = 'params.json'
 HEADERS_FILENAME = 'headers.json'
 
@@ -143,7 +150,7 @@ class DataDex(object):
         self.query(u'CREATE TABLE IF NOT EXISTS HEADERS (HEADER, DESCRIPTION)')
 
         for header in headers:
-            values = u'("{}","{}")'.format(header, headers[header])
+            values = u'("{}","{}")'.format(header, sql_escape(headers[header]))
             self.query(u'INSERT INTO HEADERS (HEADER, DESCRIPTION) VALUES {}'.format(values))
 
         self.commit()
@@ -231,7 +238,7 @@ class DataDex(object):
                     continue
                 value = entry[field]
                 if isinstance(value, (str,unicode)):
-                    conditions.append(u'{} IS "{}"'.format(field.upper(), value))
+                    conditions.append(u'{} IS "{}"'.format(field.upper(), sql_escape(value)))
                 else:
                     conditions.append(u'{} IS {}'.format(field.upper(), value))
             if enforce_null:
@@ -252,7 +259,7 @@ class DataDex(object):
             values = []
             for value in entry.values():
                 if isinstance(value, (str,unicode)):
-                    values.append('"{}"'.format(value))
+                    values.append('"{}"'.format(sql_escape(value)))
                 else:
                     values.append(repr(value))
             values = u', '.join(values)
