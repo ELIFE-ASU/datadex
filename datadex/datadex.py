@@ -141,7 +141,6 @@ class DataDex(object):
         self.query(u'CREATE TABLE IF NOT EXISTS LIBRARY ' + column_headers)
 
         self.query(u'CREATE TABLE IF NOT EXISTS HEADERS (HEADER, DESCRIPTION)')
-        print("Created headers")
 
         for header in headers:
             values = u'("{}","{}")'.format(header, headers[header])
