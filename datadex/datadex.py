@@ -137,10 +137,12 @@ class DataDex(object):
         """
         column_names = list(headers.keys())
 
-        column_headers = '({})'.format(','.join(column_names))
-        self.query('CREATE TABLE IF NOT EXISTS LIBRARY ' + column_headers)
+        column_headers = u'({})'.format(u','.join(column_names))
+        self.query(u'CREATE TABLE IF NOT EXISTS LIBRARY ' + column_headers)
 
-        self.query('CREATE TABLE IF NOT EXISTS HEADERS (HEADER, DESCRIPTION)')
+        self.query(u'CREATE TABLE IF NOT EXISTS HEADERS (HEADER, DESCRIPTION)')
+        print("Created headers")
+
         for header in headers:
             values = u'("{}","{}")'.format(header, headers[header])
             self.query(u'INSERT INTO HEADERS (HEADER, DESCRIPTION) VALUES {}'.format(values))
@@ -174,7 +176,7 @@ class DataDex(object):
                 try:
                     self.add_dir(dir)
                 except sqlite3.OperationalError as e:
-                    print('unexpected parameters in directory "{}" ({})'.format(dir,e))
+                    print(u'unexpected parameters in directory "{}" ({})'.format(dir,e))
                     if invalid_dirs is None:
                         invalid_dirs = []
                     invalid_dirs.append(dir)
@@ -193,20 +195,20 @@ class DataDex(object):
         Query the data, returning tuples of matched entries
         """
         if fields is None or fields == [] or fields == '':
-            field_query = '*'
-        elif isinstance(fields, str):
+            field_query = u'*'
+        elif isinstance(fields, (str,unicode)):
             field_query = fields.upper()
         else:
-            field_query = ','.join(fields).upper()
+            field_query = u','.join(fields).upper()
 
         if conditions is None or conditions == [] or conditions == '':
-            condition_query = ''
-        elif isinstance(conditions, str):
-            condition_query = 'WHERE ' + conditions.upper()
+            condition_query = u''
+        elif isinstance(conditions, (str,unicode)):
+            condition_query = u'WHERE ' + conditions.upper()
         else:
-            condition_query = 'WHERE ' + ' AND '.join(conditions)
+            condition_query = u'WHERE ' + u' AND '.join(conditions)
 
-        query = 'SELECT {} FROM LIBRARY {}'.format(field_query, condition_query)
+        query = u'SELECT {} FROM LIBRARY {}'.format(field_query, condition_query)
         return self.query(query)
 
     def search(self, *conditions):
@@ -229,7 +231,10 @@ class DataDex(object):
                 if ignore_filename and field.lower() == "filename":
                     continue
                 value = entry[field]
-                conditions.append("{} IS {}".format(field.upper(), repr(value)))
+                if isinstance(value, (str,unicode)):
+                    conditions.append(u'{} IS "{}"'.format(field.upper(), value))
+                else:
+                    conditions.append(u'{} IS {}'.format(field.upper(), value))
             if enforce_null:
                 for field in self.headers:
                     if field.lower() == "filename" and ignore_filename:
@@ -244,9 +249,15 @@ class DataDex(object):
         """
         if len(self.lookup(entry, True, True)) == 0:
             values = entry.values()
-            fields = "({})".format(", ".join(map(lambda x: x.upper(), entry.keys())))
-            values = "({})".format(", ".join(map(repr, entry.values())))
-            self.query("INSERT INTO LIBRARY {} VALUES {}".format(fields, values))
+            fields = u'({})'.format(u', '.join(map(lambda x: x.upper(), entry.keys())))
+            values = []
+            for value in entry.values():
+                if isinstance(value, (str,unicode)):
+                    values.append('"{}"'.format(value))
+                else:
+                    values.append(repr(value))
+            values = u', '.join(values)
+            self.query(u'INSERT INTO LIBRARY {} VALUES ({})'.format(fields, values))
             return True
         return False
 
@@ -255,9 +266,9 @@ class DataDex(object):
         Add a directory to the index.
         """
         if not path.exists(dirname):
-            raise RuntimeError('"{}" does not exist'.format(dirname))
+            raise RuntimeError(u'"{}" does not exist'.format(dirname))
         elif not path.isdir(dirname):
-            raise RuntimeError('"{}" is not a directory'.format(dirname))
+            raise RuntimeError(u'"{}" is not a directory'.format(dirname))
 
         param_file = path.join(dirname, PARAMS_FILENAME)
         if not path.exists(param_file) or not path.isfile(param_file):
@@ -277,7 +288,7 @@ class DataDex(object):
             params["filename"] = name
             file_added = self.add(params)
         else:
-            msg = 'empty params file found {}'
+            msg = u'empty params file found {}'
             raise RuntimeError(msg.format(param_filepath))
 
         if (file_added or (file_found and not path.exists(name))) and self.hash_dir:
@@ -317,8 +328,8 @@ class DataDex(object):
         something_was_pruned = False
         for dataset in self.search():
             if not path.exists(dataset):
-                query = 'DELETE FROM LIBRARY WHERE FILENAME = {}'
-                self.query(query.format(repr(dataset)))
+                query = u'DELETE FROM LIBRARY WHERE FILENAME = "{}"'
+                self.query(query.format(dataset))
                 something_was_pruned = True
         if something_was_pruned:
             self.commit()
@@ -329,9 +340,9 @@ class DataDex(object):
         Return a description of a header
         """
         if header is None:
-            return dict(self.query('SELECT * FROM HEADERS'))
+            return dict(self.query(u'SELECT * FROM HEADERS'))
         else:
-            query ='SELECT DESCRIPTION FROM HEADERS WHERE HEADER="{}"'.format(header)
+            query =u'SELECT DESCRIPTION FROM HEADERS WHERE HEADER="{}"'.format(header)
             description = self.query(query)
             if len(description) == 0:
                 return None
@@ -352,4 +363,4 @@ class DataDex(object):
             with open(filename, 'r') as file:
                 return json.load(file)
         except ValueError:
-            raise ValueError('invalid JSON in "{}"'.format(filename))
+            raise ValueError(u'invalid JSON in "{}"'.format(filename))
