@@ -68,7 +68,7 @@ class DataDex(object):
         self.connect()
 
         self.__headers = self.get_headers()
-        if self.headers is not None and self.headers[-1].lower() != 'filename':
+        if self.headers is not None and 'filename' not in self.headers:
             raise RuntimeError("filename column is missing from library")
 
     def connect(self):
@@ -186,6 +186,7 @@ class DataDex(object):
                     if invalid_dirs is None:
                         invalid_dirs = []
                     invalid_dirs.append(dir)
+            self.commit()
         return invalid_dirs
 
     def query(self, query):
@@ -210,7 +211,7 @@ class DataDex(object):
         if conditions is None or conditions == [] or conditions == '':
             condition_query = u''
         elif isinstance(conditions, (str,unicode)):
-            condition_query = u'WHERE ' + conditions.upper()
+            condition_query = u'WHERE ' + conditions
         else:
             condition_query = u'WHERE ' + u' AND '.join(conditions)
 
