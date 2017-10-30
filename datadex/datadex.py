@@ -151,7 +151,7 @@ class DataDex(object):
 
         return column_names
 
-    def create_library(self, headers_filename=HEADERS_FILENAME):
+    def create_library(self, headers_filename=HEADERS_FILENAME, force=False):
         """
         Create a library with the provided parameter names
         """
@@ -168,7 +168,7 @@ class DataDex(object):
         invalid_dirs = None
         if self.headers is None:
             self.__headers = self.__create_tables(headers)
-        elif self.headers != list(headers.keys()):
+        elif self.headers != list(headers.keys()) or force:
             entry_dirs = set(self.search())
             self.__drop_tables()
             self.__headers = self.__create_tables(headers)
