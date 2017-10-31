@@ -216,7 +216,7 @@ class DataDex(object):
             condition_query = u'WHERE ' + u' AND '.join(conditions)
 
         query = u'SELECT {} FROM LIBRARY {}'.format(field_query, condition_query)
-        return self.query(query)
+        return list(map(lambda x: x[0] if len(x) == 1 else x, self.query(query)))
 
     def search(self, *conditions):
         """
@@ -226,7 +226,7 @@ class DataDex(object):
             raw_response = self.select(fields="FILENAME", conditions=conditions)
         else:
             raw_response = self.select(fields="FILENAME")
-        return list(map(lambda x: path.normpath(x[0]), raw_response))
+        return list(map(os.path.normpath, raw_response))
 
     def lookup(self, entry=None, ignore_filename=True, enforce_null=True):
         """
